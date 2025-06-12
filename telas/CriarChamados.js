@@ -43,7 +43,7 @@ export default function CriarChamados() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://192.168.0.114:8000/api/chamadas/', {
+      const response = await fetch('http://192.168.0.114:8000/api/chamadas-usuario/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

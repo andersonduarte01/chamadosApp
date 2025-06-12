@@ -9,109 +9,117 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  Button,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import LinearGradient from 'react-native-linear-gradient';
-import { Button } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import HomeScreen from './HomeScreen';
-
 export default function EditarChamado() {
-  
   const route = useRoute();
   const { chamadoId } = route.params;
   const [statusChamado, setStatusChamado] = useState('');
-
   const [manutencao, setManutencao] = useState('');
   const [descricao, setDescricao] = useState('');
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
+
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchChamado = async () => {
+    const fetchToken = async () => {
       const savedToken = await AsyncStorage.getItem('@access_token');
       if (!savedToken) {
-        Alert.alert('Erro', 'Token não encontrado. Faça login novamente.');
+        Alert.alert('Erro', 'Usuário não autenticado.');
+        navigation.goBack();
         return;
       }
       setToken(savedToken);
+      return savedToken;
+    };
 
+    const fetchChamado = async (savedToken) => {
       try {
-        const res = await fetch(`http://192.168.0.114:8000/api/chamadas/${chamadoId}/`, {
+        const resChamado = await fetch(`http://192.168.0.114:8000/api/chamadas-usuario/${chamadoId}/`, {
           headers: {
             Authorization: `Bearer ${savedToken}`,
           },
         });
-        const data = await res.json();
-        setManutencao(data.manutencao?.toString());
-        setDescricao(data.descricao);
-        setStatusChamado(data.status_chamado?.toString());
 
+        if (!resChamado.ok) throw new Error('Erro ao buscar chamado.');
+
+        const data = await resChamado.json();
+        setManutencao(data.manutencao?.toString() || '');
+        setDescricao(data.descricao || '');
+        setStatusChamado(data.status_chamado?.toString() || '');
       } catch (err) {
+        console.error(err);
         Alert.alert('Erro', 'Falha ao carregar dados do chamado.');
+        navigation.goBack();
       } finally {
         setLoading(false);
       }
     };
 
-    fetchChamado();
-  }, [chamadoId]);
+    fetchToken().then((savedToken) => {
+      if (savedToken) fetchChamado(savedToken);
+    });
+  }, [chamadoId, navigation]);
 
   async function handleSubmit() {
-   
-  if (!manutencao || !descricao) {
-    Alert.alert('Erro', 'Preencha todos os campos');
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const response = await fetch(`http://192.168.0.114:8000/api/chamadas/${chamadoId}/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        manutencao,
-        descricao,
-        status_chamado: statusChamado,
-      }),
-    });
-
-    if (response.ok) {
-            Alert.alert(
-              'Sucesso',
-              'Chamado atualizado com sucesso',
-              [
-                {
-                  text: 'OK',
-                  onPress: () => navigation.navigate('ListaChamadas'),
-                },
-              ],
-              { cancelable: false }
-            );
-    
-            setManutencao('');
-            setDescricao('');
-          } else {
-      const errorData = await response.json();
-      console.error('Erro na atualização:', errorData);
-      Alert.alert('Erro', 'Não foi possível atualizar o chamado.');
+    if (!statusChamado) {
+      Alert.alert('Erro', 'Selecione um status para o chamado.');
+      return;
     }
-  } catch (error) {
-    console.error('Erro:', error);
-    Alert.alert('Erro', 'Ocorreu um erro ao atualizar o chamado.');
-  } finally {
-    setLoading(false);
-  }
-}
 
+    if (!manutencao || !descricao) {
+      Alert.alert('Erro', 'Preencha todos os campos');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const body = {
+        status_chamado: Number(statusChamado),
+        manutencao: Number(manutencao),
+        descricao: descricao,
+      };
+
+      const response = await fetch(`http://192.168.0.114:8000/api/chamadas-usuario/${chamadoId}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        Alert.alert(
+          'Sucesso',
+          'Chamado atualizado com sucesso',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('ListaChamadas'),
+            },
+          ],
+          { cancelable: false }
+        );
+      } else {
+        const errorData = await response.json();
+        console.error('Erro na atualização:', errorData);
+        Alert.alert('Erro', 'Não foi possível atualizar o chamado.');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao atualizar o chamado.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -123,9 +131,7 @@ export default function EditarChamado() {
 
   return (
     <View style={styles.container}>
-      {Platform.OS === 'android' && (
-        <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />
-      )}
+      {Platform.OS === 'android' && <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />}
 
       {/* TOPO COM GRADIENTE */}
       <LinearGradient colors={['#0D47A1', '#1565C0']} style={styles.flexOne}>
@@ -163,6 +169,7 @@ export default function EditarChamado() {
             multiline
             textAlignVertical="top"
           />
+
           <Text style={styles.label}>Status do Chamado:</Text>
           <Picker
             selectedValue={statusChamado}
@@ -173,12 +180,8 @@ export default function EditarChamado() {
             <Picker.Item label="Finalizado" value="2" />
             <Picker.Item label="Cancelado" value="3" />
           </Picker>
-          <Button
-            title="Salvar Alterações"
-            onPress={handleSubmit}
-            color="#1565C0"
-            disabled={loading}
-          />
+
+          <Button title="Salvar Alterações" onPress={handleSubmit} color="#1565C0" disabled={loading} />
         </View>
       </View>
     </View>
@@ -187,30 +190,25 @@ export default function EditarChamado() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-
   flexOne: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   flexTwo: {
     flex: 2,
     padding: 8,
     backgroundColor: '#e8e9eb',
   },
-
   headerContent: {
     paddingHorizontal: 20,
   },
-
   title: {
     fontSize: 24,
     fontFamily: 'Poppins-Bold',
     color: '#fff',
     textAlign: 'center',
   },
-
   card: {
     flex: 1,
     backgroundColor: '#fff',
@@ -224,14 +222,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
   },
-
   label: {
     fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
     marginBottom: 6,
     color: '#333',
   },
-
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -241,7 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
   },
-
   picker: {
     borderWidth: 1,
     borderColor: '#ccc',
