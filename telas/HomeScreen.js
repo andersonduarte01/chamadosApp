@@ -3,8 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-nati
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
-import CriarChamado from './CriarChamados';
-import ListaChamadas from './ListaChamadas';
 
 const { width, height } = Dimensions.get('window');
 const CARD_MARGIN = 8;
@@ -38,11 +36,11 @@ export default function HomeScreen() {
       <View style={styles.flexTwo}>
         <View style={styles.grid}>
           <Card iconName="add-circle" label="Novo Chamado" onPress={() => navigation.navigate('Novo Chamado')} />
-          <Card iconName="list" label="Histórico Chamados" onPress={() => navigation.navigate('Chamados')} />
-          <Card iconName="message" label="Mensagens" onPress={() => {}} />
-          <Card iconName="logout" label="Sair" onPress={() => navigation.navigate('Sair')} />             
+          <Card iconName="list" label="Meus Chamados" onPress={() => navigation.navigate('Chamados')} />
+          <Card iconName="reorder" label="Histórico Chamados" onPress={() => navigation.navigate('ChamadosAtendidos')} />            
           <Card iconName="settings" label="Configurações" onPress={() => {}} />  
-          <Card iconName="person" label="Perfil" onPress={() => {}} />  
+          <Card iconName="person" label="Perfil" onPress={() => {}} />
+          <Card iconName="logout" label="Sair" onPress={() => navigation.navigate('Sair')} />               
         </View>
       </View>
     </View>

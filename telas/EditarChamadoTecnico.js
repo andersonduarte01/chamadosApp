@@ -40,11 +40,11 @@ export default function EditarChamadoTecnico() {
       try {
         const token = await AsyncStorage.getItem('@access_token');
         const response = await axios.get(
-          `http://192.168.0.114:8000/api/chamadas-tecnico/${chamadoId}/`,
+          `http://192.168.0.103:8000/api/chamadas-tecnico/${chamadoId}/`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setChamado(response.data);
-        setStatusChamado(response.data.status_chamado?.toString() || '');
+        setStatusChamado(response.data.status_chamado?.toString() || '1');
       } catch (error) {
         Alert.alert('Erro', 'Erro ao buscar chamado');
       } finally {
@@ -59,7 +59,7 @@ export default function EditarChamadoTecnico() {
     try {
       const token = await AsyncStorage.getItem('@access_token');
       await axios.patch(
-        `http://192.168.0.114:8000/api/chamadas-tecnico/${chamadoId}/`,
+        `http://192.168.0.103:8000/api/chamadas-tecnico/${chamadoId}/`,
         { status_chamado: Number(statusChamado) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -88,8 +88,8 @@ export default function EditarChamadoTecnico() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerText}>Atendimento Chamado</Text>
-          <View style={{ width: 24 }} /> {/* espaço para equilibrar visualmente */}
+          <Text style={styles.headerText}>Atendimento</Text>
+          <View style={{ width: 24 }} /> 
         </View>
       </LinearGradient>
 
@@ -99,9 +99,6 @@ export default function EditarChamadoTecnico() {
           <View style={styles.infoCard}>
             <Text style={styles.label}>Solicitante:</Text>
             <Text style={styles.infoText}>{chamado.usuario?.nome || 'Não informado'}</Text>
-
-            <Text style={styles.label}>Título:</Text>
-            <Text style={styles.infoText}>{chamado.titulo || 'Não informado'}</Text>
 
             <Text style={styles.label}>Descrição:</Text>
             <Text style={styles.infoText}>{chamado.descricao || 'Não informado'}</Text>
@@ -118,8 +115,8 @@ export default function EditarChamadoTecnico() {
               style={styles.picker}
             >
               <Picker.Item label="Aberto" value="1" />
-              <Picker.Item label="Em andamento" value="2" />
-              <Picker.Item label="Concluído" value="3" />
+              <Picker.Item label="Concluído" value="2" />
+              <Picker.Item label="Cancelado" value="3" />
             </Picker>
 
             <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
@@ -139,7 +136,7 @@ const styles = StyleSheet.create({
   },
   topContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   topContent: {
     flexDirection: 'row',
@@ -159,6 +156,7 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 2,
+    marginTop: -50
   },
   contentContainer: {
     padding: 20,
@@ -177,20 +175,27 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',  // Cinza discreto
     marginTop: 10,
   },
   infoText: {
-    fontSize: 16,
-    color: '#1E90FF',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#0D47A1',
     marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
+  
   picker: {
     marginVertical: 10,
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
+    color: '#0D47A1',
+    fontWeight: 'bold',
   },
   saveButton: {
     backgroundColor: '#1E90FF',

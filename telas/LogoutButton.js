@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LogoutButton({ navigation }) {
   const handleLogout = async () => {
@@ -14,9 +15,11 @@ export default function LogoutButton({ navigation }) {
   };
 
   return (
-    <View style={{ padding: 10 }}>
-      <Button title="Sair" color="red" onPress={handleLogout} />
-    </View>
+    <SafeAreaView>
+      <View style={{ padding: 10 }}>
+        <Button title="Sair" color="red" onPress={handleLogout} />
+      </View>
+    </SafeAreaView>
   );
 }
 

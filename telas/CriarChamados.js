@@ -8,12 +8,11 @@ import {
   Platform,
   StatusBar,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
-
-
 
 export default function CriarChamados() {
   const [manutencao, setManutencao] = useState('');
@@ -43,7 +42,7 @@ export default function CriarChamados() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://192.168.0.114:8000/api/chamadas-usuario/', {
+      const response = await fetch('http://192.168.0.103:8000/api/chamadas-usuario/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +68,6 @@ export default function CriarChamados() {
         setDescricao('');
       } else {
         const errorData = await response.json();
-        Alert.alert('Erro', JSON.stringify(errorData));
       }
     } catch (error) {
       Alert.alert('Erro', 'Falha na comunicação com o servidor');
@@ -79,62 +77,69 @@ export default function CriarChamados() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe}>
       {Platform.OS === 'android' && (
         <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />
       )}
 
-      {/* Topo */}
-      <View style={styles.top}>
-        <Text style={styles.title}>Criar Chamado</Text>
-      </View>
+      <View style={styles.container}>
+        {/* Topo */}
+        <View style={styles.top}>
+          <Text style={styles.title}>Novo Chamado</Text>
+        </View>
 
-      {/* Formulário */}
-      <View style={styles.bottom}>
-        <View style={styles.card}>
-          <Text style={styles.label}>Tipo de Manutenção</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={manutencao}
-              onValueChange={(itemValue) => setManutencao(itemValue)}
-              style={styles.picker}
-              itemStyle={styles.pickerItem}
+        {/* Formulário */}
+        <View style={styles.bottom}>
+          <View style={styles.card}>
+            <Text style={styles.label}>Tipo de Manutenção</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={manutencao}
+                onValueChange={(itemValue) => setManutencao(itemValue)}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+              >
+                <Picker.Item label="Selecione..." value="" />
+                <Picker.Item label="Computador" value="1" />
+                <Picker.Item label="Impressora" value="2" />
+                <Picker.Item label="Computador e Impressora" value="3" />
+                <Picker.Item label="Outro" value="4" />
+              </Picker>
+            </View>
+
+            <Text style={styles.label}>Descrição</Text>
+            <TextInput
+              style={styles.input}
+              value={descricao}
+              onChangeText={setDescricao}
+              placeholder="Descreva o problema..."
+              multiline
+              textAlignVertical="top"
+              placeholderTextColor="#999"
+            />
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSubmit}
+              disabled={loading}
             >
-              <Picker.Item label="Selecione..." value="" />
-              <Picker.Item label="Computador" value="1" />
-              <Picker.Item label="Impressora" value="2" />
-              <Picker.Item label="Computador e Impressora" value="3" />
-              <Picker.Item label="Outro" value="4" />
-            </Picker>
+              <Text style={styles.buttonText}>
+                {loading ? 'Enviando...' : 'Criar Chamado'}
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          <Text style={styles.label}>Descrição</Text>
-          <TextInput
-            style={styles.input}
-            value={descricao}
-            onChangeText={setDescricao}
-            placeholder="Descreva o problema..."
-            multiline
-            textAlignVertical="top"
-            placeholderTextColor="#999"
-          />
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'Enviando...' : 'Criar Chamado'}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: '#0D47A1', // Mantém a cor do topo na borda superior dos devices
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#E3ECF3',
@@ -143,12 +148,12 @@ const styles = StyleSheet.create({
   top: {
     flex: 1,
     backgroundColor: '#0D47A1',
-    justifyContent: 'center', // agora o texto está no meio verticalmente
+    justifyContent: 'center',
     alignItems: 'center',
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#fff',
     fontFamily: 'Poppins-Bold',
   },
@@ -156,11 +161,11 @@ const styles = StyleSheet.create({
   bottom: {
     flex: 2,
     padding: 10,
-    marginTop: -40,
+    marginTop: -40,    
   },
 
   card: {
-    flex: 1, // ocupa todo o espaço do bottom
+    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
@@ -169,13 +174,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    justifyContent: 'center'
   },
 
   label: {
     fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#333',
+    fontFamily: 'Poppins-Bold',
+    color: '#666',
     marginBottom: 8,
+    fontWeight: 'bold'
   },
 
   pickerWrapper: {
@@ -194,8 +201,9 @@ const styles = StyleSheet.create({
   },
 
   pickerItem: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins-Regular',
+    color: '#333',
   },
 
   input: {
@@ -204,10 +212,11 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 10,
     padding: 12,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins-Regular',
-    marginBottom: 24,
+    color: '#333',
     backgroundColor: '#fff',
+    marginBottom: 24,
   },
 
   button: {
@@ -218,8 +227,8 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#fff',
     fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
+    color: '#fff',
   },
 });

@@ -42,7 +42,7 @@ export default function EditarChamado() {
 
     const fetchChamado = async (savedToken) => {
       try {
-        const resChamado = await fetch(`http://192.168.0.114:8000/api/chamadas-usuario/${chamadoId}/`, {
+        const resChamado = await fetch(`http://192.168.0.103:8000/api/chamadas-usuario/${chamadoId}/`, {
           headers: {
             Authorization: `Bearer ${savedToken}`,
           },
@@ -87,7 +87,7 @@ export default function EditarChamado() {
         descricao: descricao,
       };
 
-      const response = await fetch(`http://192.168.0.114:8000/api/chamadas-usuario/${chamadoId}/`, {
+      const response = await fetch(`http://192.168.0.103:8000/api/chamadas-usuario/${chamadoId}/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -97,20 +97,10 @@ export default function EditarChamado() {
       });
 
       if (response.ok) {
-        Alert.alert(
-          'Sucesso',
-          'Chamado atualizado com sucesso',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('ListaChamadas'),
-            },
-          ],
-          { cancelable: false }
-        );
+        Alert.alert('Sucesso', 'Chamado atualizado com sucesso');
+        navigation.goBack();          
       } else {
         const errorData = await response.json();
-        console.error('Erro na atualização:', errorData);
         Alert.alert('Erro', 'Não foi possível atualizar o chamado.');
       }
     } catch (error) {
@@ -214,8 +204,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
+    paddingTop: 40,
     marginTop: -40,
-    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,

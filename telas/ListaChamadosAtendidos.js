@@ -33,7 +33,7 @@ const truncateText = (text, maxLength) => {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 };
 
-export default function ListaChamadas() {
+export default function ListaChamadosAtendidos() {
   const navigation = useNavigation();
   const [chamadas, setChamadas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,8 +67,8 @@ export default function ListaChamadas() {
       if (!token) throw new Error('Token não encontrado');
 
       const endpoint = isTecnico
-        ? 'http://192.168.0.103:8000/api/chamadas-tecnico/'
-        : 'http://192.168.0.103:8000/api/chamadas-usuario/';
+        ? 'http://192.168.0.103:8000/api/chamados-finalizados/'
+        : 'http://192.168.0.103:8000/api/chamados-usuario-finalizados/';
 
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },

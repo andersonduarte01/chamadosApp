@@ -12,6 +12,7 @@ import CriarChamado from './telas/CriarChamados';
 import ListaChamadas from './telas/ListaChamadas';
 import EditarChamado from './telas/EditarChamado';
 import EditarChamadoTecnico from './telas/EditarChamadoTecnico'
+import ListaChamadosAtendidos from './telas/ListaChamadosAtendidos';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,7 @@ export default function App() {
           <Stack.Screen name="ListaChamadas" component={ListaChamadas} />
           <Stack.Screen name="EditarChamado" component={EditarChamado} />
           <Stack.Screen name="EditarChamadoTecnico" component={EditarChamadoTecnico} />
+          <Stack.Screen name="ChamadosAtendidos" component={ListaChamadosAtendidos} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
