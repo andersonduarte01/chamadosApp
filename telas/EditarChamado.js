@@ -6,13 +6,12 @@ import {
   Alert,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   StatusBar,
   ActivityIndicator,
-  Button,
+  ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import LinearGradient from 'react-native-linear-gradient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -42,11 +41,14 @@ export default function EditarChamado() {
 
     const fetchChamado = async (savedToken) => {
       try {
-        const resChamado = await fetch(`http://192.168.0.103:8000/api/chamadas-usuario/${chamadoId}/`, {
-          headers: {
-            Authorization: `Bearer ${savedToken}`,
-          },
-        });
+        const resChamado = await fetch(
+          `http://192.168.0.100:8000/api/chamadas-usuario/${chamadoId}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${savedToken}`,
+            },
+          }
+        );
 
         if (!resChamado.ok) throw new Error('Erro ao buscar chamado.');
 
@@ -87,20 +89,22 @@ export default function EditarChamado() {
         descricao: descricao,
       };
 
-      const response = await fetch(`http://192.168.0.103:8000/api/chamadas-usuario/${chamadoId}/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+      const response = await fetch(
+        `http://192.168.0.100:8000/api/chamadas-usuario/${chamadoId}/`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
 
       if (response.ok) {
         Alert.alert('Sucesso', 'Chamado atualizado com sucesso');
-        navigation.goBack();          
+        navigation.goBack();
       } else {
-        const errorData = await response.json();
         Alert.alert('Erro', 'Não foi possível atualizar o chamado.');
       }
     } catch (error) {
@@ -113,44 +117,45 @@ export default function EditarChamado() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1565C0" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {Platform.OS === 'android' && <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />
 
-      {/* TOPO COM GRADIENTE */}
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={styles.flexOne}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', top: 40, left: 20 }}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
+      {/* TOPO */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Editar Chamado</Text>
-        </View>
-      </LinearGradient>
+        <Text style={styles.headerTitle}>Editar Chamado</Text>
+      </View>
 
-      {/* FORMULÁRIO */}
-      <View style={styles.flexTwo}>
+      <ScrollView style={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.label}>Tipo de Manutenção:</Text>
-          <Picker
-            selectedValue={manutencao}
-            onValueChange={(itemValue) => setManutencao(itemValue)}
-            style={styles.picker}
-            dropdownIconColor="#1565C0"
-          >
-            <Picker.Item label="Selecione..." value="" />
-            <Picker.Item label="Computador" value="1" />
-            <Picker.Item label="Impressora" value="2" />
-            <Picker.Item label="Computador e Impressora" value="3" />
-            <Picker.Item label="Outro" value="4" />
-          </Picker>
+          <Text style={styles.label}>Tipo de Manutenção</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={manutencao}
+              onValueChange={(itemValue) => setManutencao(itemValue)}
+              dropdownIconColor="#1565C0"
+            >
+              <Picker.Item label="Selecione..." value="" />
+              <Picker.Item label="Computador" value="1" />
+              <Picker.Item label="Impressora" value="2" />
+              <Picker.Item label="Computador e Impressora" value="3" />
+              <Picker.Item label="Outro" value="4" />
+            </Picker>
+          </View>
 
-          <Text style={styles.label}>Descrição:</Text>
+          <Text style={styles.label}>Descrição</Text>
           <TextInput
             style={[styles.input, { height: 100 }]}
             value={descricao}
@@ -160,80 +165,121 @@ export default function EditarChamado() {
             textAlignVertical="top"
           />
 
-          <Text style={styles.label}>Status do Chamado:</Text>
-          <Picker
-            selectedValue={statusChamado}
-            onValueChange={(itemValue) => setStatusChamado(itemValue)}
-            style={styles.input}
-          >
-            <Picker.Item label="Aguardando" value="1" />
-            <Picker.Item label="Finalizado" value="2" />
-            <Picker.Item label="Cancelado" value="3" />
-          </Picker>
+          <Text style={styles.label}>Status do Chamado</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={statusChamado}
+              onValueChange={(itemValue) => setStatusChamado(itemValue)}
+              dropdownIconColor="#1565C0"
+            >
+              <Picker.Item label="Aguardando" value="1" />
+              <Picker.Item label="Finalizado" value="2" />
+              <Picker.Item label="Cancelado" value="3" />
+            </Picker>
+          </View>
 
-          <Button title="Salvar Alterações" onPress={handleSubmit} color="#1565C0" disabled={loading} />
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Salvando...' : 'Salvar Alterações'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  flexOne: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#F4F6F8',
+  },
+
+  container: { flex: 1, backgroundColor: '#F4F6F8' },
+
+  header: {
+    backgroundColor: '#0D47A1',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 50,
+    paddingBottom: 20,
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  flexTwo: {
-    flex: 2,
-    padding: 8,
-    backgroundColor: '#e8e9eb',
+
+  backButton: {
+    marginRight: 16,
   },
-  headerContent: {
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'Poppins-Bold',
+
+  headerTitle: {
+    fontSize: 20,
     color: '#fff',
-    textAlign: 'center',
+    fontFamily: 'Poppins-SemiBold',
   },
+
+  content: {
+    padding: 16,
+  },
+
   card: {
-    flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
-    paddingTop: 40,
-    marginTop: -40,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
+
   label: {
     fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 6,
     color: '#333',
+    marginBottom: 6,
   },
+
   input: {
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#DADADA',
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 16,
-    fontSize: 16,
+    paddingVertical: 10,
+    fontSize: 15,
     fontFamily: 'Poppins-Regular',
+    marginBottom: 16,
   },
-  picker: {
+
+  pickerWrapper: {
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#DADADA',
     borderRadius: 8,
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+
+  button: {
+    backgroundColor: '#1565C0',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+
+  buttonText: {
+    color: '#fff',
     fontSize: 16,
-    fontFamily: 'Poppins-Regular',
-    height: 50,
+    fontFamily: 'Poppins-SemiBold',
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

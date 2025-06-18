@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -39,6 +38,8 @@ export default function ListaChamadas() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isTecnico, setIsTecnico] = useState(false);
+  const [nextPageUrl, setNextPageUrl] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Verificar se é técnico
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function ListaChamadas() {
         const token = await AsyncStorage.getItem('@access_token');
         if (!token) throw new Error('Token não encontrado');
 
-        const response = await axios.get('http://192.168.0.103:8000/api/usuario-logado/', {
+        const response = await axios.get('http://192.168.0.100:8000/api/usuario-logado/', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -60,30 +61,38 @@ export default function ListaChamadas() {
     fetchUsuario();
   }, []);
 
-  // Função para buscar os chamados
-  const fetchChamadas = async () => {
+  // Função para buscar chamadas, pode receber URL customizada para paginação
+  const fetchChamadas = async (url = null) => {
     try {
       const token = await AsyncStorage.getItem('@access_token');
       if (!token) throw new Error('Token não encontrado');
 
-      const endpoint = isTecnico
-        ? 'http://192.168.0.103:8000/api/chamadas-tecnico/'
-        : 'http://192.168.0.103:8000/api/chamadas-usuario/';
+      const endpoint = url || (isTecnico
+        ? 'http://192.168.0.100:8000/api/chamadas-tecnico/'
+        : 'http://192.168.0.100:8000/api/chamadas-usuario/');
 
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setChamadas(response.data);
+      if (url) {
+        // Carregando página adicional — concatena os resultados
+        setChamadas(prev => [...prev, ...response.data.results]);
+      } else {
+        // Primeira página ou refresh — substitui a lista
+        setChamadas(response.data.results);
+      }
+
+      setNextPageUrl(response.data.next);
     } catch (error) {
       console.error('Erro ao buscar chamadas:', error.message || error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
-  // Atualizar sempre que entrar na tela
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
@@ -91,13 +100,18 @@ export default function ListaChamadas() {
     }, [isTecnico])
   );
 
-  // Pull-to-refresh
   const onRefresh = () => {
     setRefreshing(true);
     fetchChamadas();
   };
 
-  // Mapas de manutenção e status
+  const loadMore = () => {
+    if (nextPageUrl && !loadingMore) {
+      setLoadingMore(true);
+      fetchChamadas(nextPageUrl);
+    }
+  };
+
   const mapManutencao = (codigo) => ({
     '1': 'Computador',
     '2': 'Impressora',
@@ -111,11 +125,10 @@ export default function ListaChamadas() {
     '3': 'Cancelado',
   }[codigo] || 'Desconhecido');
 
-  // Tela de loading inicial
-  if (loading) {
+  if (loading && chamadas.length === 0) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#1976D2" />
+        <ActivityIndicator size="large" color="#1565C0" />
       </View>
     );
   }
@@ -126,24 +139,31 @@ export default function ListaChamadas() {
         <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />
       )}
 
-      {/* Header com gradiente */}
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={styles.header}>
+      {/* TOPO */}
+      <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Main')}
+          onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={28} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Lista de Chamados</Text>
-      </LinearGradient>
+        <Text style={styles.headerTitle}>Lista de Chamados</Text>
+      </View>
 
-      {/* Lista de chamados */}
+      {/* LISTA */}
       <View style={styles.content}>
         <FlatList
           data={chamadas}
           keyExtractor={(item) => item.id.toString()}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator size="small" color="#1565C0" style={{ marginVertical: 15 }} />
+            ) : null
           }
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -156,15 +176,15 @@ export default function ListaChamadas() {
             >
               <View style={styles.card}>
                 <Text style={styles.title}>
-                  Manutenção: {mapManutencao(item.manutencao)}
+                  {mapManutencao(item.manutencao)}
                 </Text>
                 <Text style={styles.text}>
                   {truncateText(item.descricao, 100)}
                 </Text>
-                <Text style={styles.text}>
+                <Text style={styles.status}>
                   Status: {mapStatus(item.status_chamado)}
                 </Text>
-                <Text style={styles.dataText}>
+                <Text style={styles.data}>
                   Data: {formatDate(item.data)}
                 </Text>
               </View>
@@ -176,65 +196,69 @@ export default function ListaChamadas() {
   );
 }
 
-// 🎨 Estilo profissional
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#e8e9eb',
+    backgroundColor: '#E3ECF3',
   },
   header: {
-    paddingVertical: 50,
-    paddingHorizontal: 20,
+    backgroundColor: '#0D47A1',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 50 : 60,
+    paddingBottom: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -15,
   },
   backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
+    marginRight: 10,
   },
-  headerText: {
-    color: '#fff',
+  headerTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    color: '#fff',
+    fontFamily: 'Poppins-Bold',
   },
   content: {
     flex: 1,
-    backgroundColor: '#e8e9eb',
-    padding: 7,
+    padding: 12,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    elevation: 4,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
     color: '#1565C0',
-    marginBottom: 6,
+    fontFamily: 'Poppins-SemiBold',
+    marginBottom: 4,
   },
   text: {
     fontSize: 14,
     color: '#333',
+    fontFamily: 'Poppins-Regular',
+    marginBottom: 4,
+  },
+  status: {
+    fontSize: 13,
+    color: '#555',
+    fontFamily: 'Poppins-Medium',
     marginBottom: 2,
   },
-  dataText: {
-    fontSize: 11,
-    fontWeight: '700',
+  data: {
+    fontSize: 12,
+    color: '#777',
+    fontFamily: 'Poppins-Regular',
     marginTop: 4,
-    color: '#555',
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#e8e9eb',
+    backgroundColor: '#E3ECF3',
   },
 });

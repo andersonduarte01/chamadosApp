@@ -1,16 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  SafeAreaView,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const CARD_MARGIN = 8;
 const NUM_COLUMNS = 2;
 const CARD_WIDTH = (width - CARD_MARGIN * (NUM_COLUMNS * 2 + 1)) / NUM_COLUMNS;
-const FLEX_TWO_HEIGHT = height * (2 / 3);
-const CARD_HEIGHT = (FLEX_TWO_HEIGHT - CARD_MARGIN * 6) / 3; // 3 rows
-
 
 function Card({ iconName, label, onPress }) {
   return (
@@ -23,86 +28,93 @@ function Card({ iconName, label, onPress }) {
 
 export default function HomeScreen() {
   const navigation = useNavigation();
-  return (
-    <View style={styles.container}>
-      {/* Topo com gradiente e título */}
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={styles.flexOne}>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Bem-vindo à Tela Inicial</Text>
-        </View>
-      </LinearGradient>
 
-      {/* Cards na parte inferior */}
-      <View style={styles.flexTwo}>
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      {Platform.OS === 'android' && (
+        <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />
+      )}
+
+      {/* TOPO */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Tela Inicial</Text>
+      </View>
+
+      {/* GRID */}
+      <View style={styles.content}>
         <View style={styles.grid}>
-          <Card iconName="add-circle" label="Novo Chamado" onPress={() => navigation.navigate('Novo Chamado')} />
-          <Card iconName="list" label="Meus Chamados" onPress={() => navigation.navigate('Chamados')} />
-          <Card iconName="reorder" label="Histórico Chamados" onPress={() => navigation.navigate('ChamadosAtendidos')} />            
-          <Card iconName="settings" label="Configurações" onPress={() => {}} />  
+          <Card
+            iconName="add-circle"
+            label="Novo Chamado"
+            onPress={() => navigation.navigate('Novo Chamado')}
+          />
+          <Card
+            iconName="list"
+            label="Meus Chamados"
+            onPress={() => navigation.navigate('Chamados')}
+          />
+          <Card
+            iconName="reorder"
+            label="Histórico"
+            onPress={() => navigation.navigate('ChamadosAtendidos')}
+          />
+          <Card iconName="settings" label="Configurações" onPress={() => {}} />
           <Card iconName="person" label="Perfil" onPress={() => {}} />
-          <Card iconName="logout" label="Sair" onPress={() => navigation.navigate('Sair')} />               
+          <Card iconName="logout" label="Sair" onPress={() => navigation.navigate('Sair')} />
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: '#0D47A1',
   },
-
-  flexOne: {
-    flex: 1,
+  header: {
+    backgroundColor: '#0D47A1',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 50 : 60,
+    paddingBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  headerContent: {
-    paddingHorizontal: 20,
-  },
-
-  title: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: 22,
     color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontFamily: 'Poppins-Bold',
   },
-
-  flexTwo: {
-    flex: 2,
-    backgroundColor: '#e8e9eb',
-    padding: CARD_MARGIN,
+  content: {
+    flex: 1,
+    backgroundColor: '#E3ECF3',
+    padding: 16,
   },
-
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: -30,
   },
-
   card: {
     width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    height: 120,
     backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 16,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: CARD_MARGIN * 2,
-    elevation: 10,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
-
   cardText: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: 15,
     color: '#1565C0',
-    fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
     textAlign: 'center',
   },
 });

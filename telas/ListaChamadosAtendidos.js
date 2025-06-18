@@ -1,37 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
-  FlatList,
   Text,
-  ActivityIndicator,
+  FlatList,
   StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
   StatusBar,
   Platform,
-  TouchableOpacity,
   RefreshControl,
+  SafeAreaView,
 } from 'react-native';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-// Função para formatar datas
-const formatDate = (isoString) => {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-};
-
-// Função para cortar textos longos
-const truncateText = (text, maxLength) => {
-  if (!text) return '';
-  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-};
+import axios from 'axios';
 
 export default function ListaChamadosAtendidos() {
   const navigation = useNavigation();
@@ -39,15 +22,17 @@ export default function ListaChamadosAtendidos() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isTecnico, setIsTecnico] = useState(false);
+  const [nextPageUrl, setNextPageUrl] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  // Verificar se é técnico
+  // Busca tipo de usuário (técnico ou não)
   useEffect(() => {
     const fetchUsuario = async () => {
       try {
         const token = await AsyncStorage.getItem('@access_token');
-        if (!token) throw new Error('Token não encontrado');
+        if (!token) return;
 
-        const response = await axios.get('http://192.168.0.103:8000/api/usuario-logado/', {
+        const response = await axios.get('http://192.168.0.100:8000/api/usuario-logado/', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -60,30 +45,39 @@ export default function ListaChamadosAtendidos() {
     fetchUsuario();
   }, []);
 
-  // Função para buscar os chamados
-  const fetchChamadas = async () => {
+  // Busca chamadas (primeira página ou próxima)
+  const fetchChamadas = async (url = null) => {
     try {
       const token = await AsyncStorage.getItem('@access_token');
-      if (!token) throw new Error('Token não encontrado');
+      if (!token) return;
 
-      const endpoint = isTecnico
-        ? 'http://192.168.0.103:8000/api/chamados-finalizados/'
-        : 'http://192.168.0.103:8000/api/chamados-usuario-finalizados/';
+      const endpoint = url || (isTecnico
+        ? 'http://192.168.0.100:8000/api/chamados-finalizados/'
+        : 'http://192.168.0.100:8000/api/chamados-usuario-finalizados/');
 
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setChamadas(response.data);
+      if (url) {
+        // Carregando próxima página: concatena
+        setChamadas(prev => [...prev, ...response.data.results]);
+      } else {
+        // Primeira página: substitui
+        setChamadas(response.data.results);
+      }
+
+      setNextPageUrl(response.data.next);
     } catch (error) {
       console.error('Erro ao buscar chamadas:', error.message || error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
-  // Atualizar sempre que entrar na tela
+  // Atualiza lista toda ao focar na tela ou quando isTecnico muda
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
@@ -91,13 +85,31 @@ export default function ListaChamadosAtendidos() {
     }, [isTecnico])
   );
 
-  // Pull-to-refresh
+  // Atualiza lista com pull to refresh
   const onRefresh = () => {
     setRefreshing(true);
     fetchChamadas();
   };
 
-  // Mapas de manutenção e status
+  // Carrega mais quando chegar no fim da lista
+  const loadMore = () => {
+    if (nextPageUrl && !loadingMore) {
+      setLoadingMore(true);
+      fetchChamadas(nextPageUrl);
+    }
+  };
+
+  // Formata data para dd/mm/aaaa
+  const formatDate = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Mapeia tipo manutenção
   const mapManutencao = (codigo) => ({
     '1': 'Computador',
     '2': 'Impressora',
@@ -105,14 +117,20 @@ export default function ListaChamadosAtendidos() {
     '4': 'Outro',
   }[codigo] || 'Desconhecido');
 
+  // Mapeia status chamado
   const mapStatus = (codigo) => ({
     '1': 'Aguardando',
     '2': 'Finalizado',
     '3': 'Cancelado',
   }[codigo] || 'Desconhecido');
 
-  // Tela de loading inicial
-  if (loading) {
+  // Trunca texto muito longo
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
+  if (loading && chamadas.length === 0) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color="#1976D2" />
@@ -126,115 +144,138 @@ export default function ListaChamadosAtendidos() {
         <StatusBar backgroundColor="#0D47A1" barStyle="light-content" />
       )}
 
-      {/* Header com gradiente */}
-      <LinearGradient colors={['#0D47A1', '#1565C0']} style={styles.header}>
+      {/* Cabeçalho */}
+      <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Main')}
+          onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={28} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Lista de Chamados</Text>
-      </LinearGradient>
+        <Text style={styles.headerTitle}>Chamados Atendidos</Text>
+      </View>
 
-      {/* Lista de chamados */}
+      {/* Conteúdo */}
       <View style={styles.content}>
-        <FlatList
-          data={chamadas}
-          keyExtractor={(item) => item.id.toString()}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate(
-                  isTecnico ? 'EditarChamadoTecnico' : 'EditarChamado',
-                  { chamadoId: item.id }
-                )
-              }
-            >
+        {chamadas.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Nenhum chamado atendido.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={chamadas}
+            keyExtractor={(item) => item.id.toString()}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListFooterComponent={
+              loadingMore ? (
+                <ActivityIndicator size="small" color="#1976D2" style={{ marginVertical: 15 }} />
+              ) : null
+            }
+            renderItem={({ item }) => (
               <View style={styles.card}>
                 <Text style={styles.title}>
-                  Manutenção: {mapManutencao(item.manutencao)}
+                  {mapManutencao(item.manutencao)}
                 </Text>
-                <Text style={styles.text}>
+                <Text style={styles.description}>
                   {truncateText(item.descricao, 100)}
                 </Text>
-                <Text style={styles.text}>
-                  Status: {mapStatus(item.status_chamado)}
-                </Text>
-                <Text style={styles.dataText}>
-                  Data: {formatDate(item.data)}
-                </Text>
+                <View style={styles.footer}>
+                  <Text style={styles.status}>
+                    Status: {mapStatus(item.status_chamado)}
+                  </Text>
+                  <Text style={styles.date}>
+                    {formatDate(item.data)}
+                  </Text>
+                </View>
               </View>
-            </TouchableOpacity>
-          )}
-        />
+            )}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
-// 🎨 Estilo profissional
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#e8e9eb',
+    backgroundColor: '#0D47A1',
   },
   header: {
-    paddingVertical: 50,
-    paddingHorizontal: 20,
+    backgroundColor: '#0D47A1',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 50 : 60,
+    paddingBottom: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -15,
   },
   backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
+    marginRight: 10,
   },
-  headerText: {
-    color: '#fff',
+  headerTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    color: '#fff',
+    fontFamily: 'Poppins-Bold',
   },
   content: {
     flex: 1,
-    backgroundColor: '#e8e9eb',
-    padding: 7,
+    backgroundColor: '#E3ECF3',
+    padding: 16,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 20,
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
     color: '#1565C0',
-    marginBottom: 6,
+    fontFamily: 'Poppins-SemiBold',
+    marginBottom: 8,
   },
-  text: {
+  description: {
     fontSize: 14,
     color: '#333',
-    marginBottom: 2,
+    fontFamily: 'Poppins-Regular',
+    marginBottom: 10,
   },
-  dataText: {
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 4,
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  status: {
+    fontSize: 12,
     color: '#555',
+    fontFamily: 'Poppins-Medium',
+  },
+  date: {
+    fontSize: 12,
+    color: '#888',
+    fontFamily: 'Poppins-Regular',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    fontFamily: 'Poppins-Regular',
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#e8e9eb',
+    backgroundColor: '#E3ECF3',
   },
 });

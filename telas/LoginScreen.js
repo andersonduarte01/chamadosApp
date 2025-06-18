@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://192.168.0.103:8000/api/token/', {
+      const response = await axios.post('http://192.168.0.100:8000/api/token/', {
         username,
         password,
       });
