@@ -40,7 +40,7 @@ export default function EditarChamadoTecnico() {
       try {
         const token = await AsyncStorage.getItem('@access_token');
         const response = await axios.get(
-          `http://192.168.0.100:8000/api/chamadas-tecnico/${chamadoId}/`,
+          `https://smepedrabranca.com.br/api/v1/chamados-tecnico/${chamadoId}/`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setChamado(response.data);
@@ -59,7 +59,7 @@ export default function EditarChamadoTecnico() {
     try {
       const token = await AsyncStorage.getItem('@access_token');
       await axios.patch(
-        `http://192.168.0.100:8000/api/chamadas-tecnico/${chamadoId}/`,
+        `https://smepedrabranca.com.br/api/v1/chamados-tecnico/${chamadoId}/`,
         { status_chamado: Number(statusChamado) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -98,7 +98,7 @@ export default function EditarChamadoTecnico() {
         <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.infoCard}>
             <Text style={styles.label}>Solicitante:</Text>
-            <Text style={styles.infoText}>{chamado.usuario?.nome || 'Não informado'}</Text>
+            <Text style={styles.infoText}>{chamado.mobileusuario?.nome || 'Não informado'}</Text>
 
             <Text style={styles.label}>Descrição:</Text>
             <Text style={styles.infoText}>{chamado.descricao || 'Não informado'}</Text>

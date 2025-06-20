@@ -42,7 +42,7 @@ export default function EditarChamado() {
     const fetchChamado = async (savedToken) => {
       try {
         const resChamado = await fetch(
-          `http://192.168.0.100:8000/api/chamadas-usuario/${chamadoId}/`,
+          `http://192.168.0.19:8000/api/v1/chamados-usuario/${chamadoId}/`,
           {
             headers: {
               Authorization: `Bearer ${savedToken}`,
@@ -90,7 +90,7 @@ export default function EditarChamado() {
       };
 
       const response = await fetch(
-        `http://192.168.0.100:8000/api/chamadas-usuario/${chamadoId}/`,
+        `https://smepedrabranca.com.br/api/v1/chamados-usuario/${chamadoId}/`,
         {
           method: 'PUT',
           headers: {

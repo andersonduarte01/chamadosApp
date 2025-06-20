@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,12 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 8;
@@ -28,6 +31,63 @@ function Card({ iconName, label, onPress }) {
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const [userType, setUserType] = useState(null); // 'tecnico' ou 'usuario'
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUserType = async () => {
+      try {
+        const token = await AsyncStorage.getItem('@access_token');
+        if (!token) {
+          Alert.alert('Erro', 'Token não encontrado');
+          navigation.navigate('Login');
+          return;
+        }
+
+        const response = await fetch('https://smepedrabranca.com.br/api/usuario-logado/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          throw new Error('Falha ao obter dados do usuário');
+        }
+
+        const userData = await response.json();
+
+        if (userData.is_tecnico) {
+          setUserType('tecnico');
+        } else if (userData.is_solicitante) {
+          setUserType('usuario');
+        } else {
+          Alert.alert('Erro', 'Tipo de usuário não reconhecido');
+          navigation.navigate('Login');
+        }
+      } catch (error) {
+        Alert.alert('Erro', error.message);
+        navigation.navigate('Login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserType();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1E90FF" />
+      </View>
+    );
+  }
+
+  const handleNovo = () => {
+    if (userType === 'tecnico') {
+      navigation.navigate('CadastrarUsuario');
+    } else {
+      navigation.navigate('Novo Chamado');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -44,9 +104,9 @@ export default function HomeScreen() {
       <View style={styles.content}>
         <View style={styles.grid}>
           <Card
-            iconName="add-circle"
-            label="Novo Chamado"
-            onPress={() => navigation.navigate('Novo Chamado')}
+            iconName={userType === 'tecnico' ? 'person-add' : 'add-circle'}
+            label={userType === 'tecnico' ? 'Cadastrar Usuário' : 'Novo Chamado'}
+            onPress={handleNovo}
           />
           <Card
             iconName="list"
@@ -116,5 +176,10 @@ const styles = StyleSheet.create({
     color: '#1565C0',
     fontFamily: 'Poppins-SemiBold',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

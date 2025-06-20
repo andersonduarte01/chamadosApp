@@ -12,19 +12,20 @@ import {
   SafeAreaView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-export default function CriarChamado() {
-  const [manutencao, setManutencao] = useState('');
-  const [descricao, setDescricao] = useState('');
+export default function CadastrarUsuario() {
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(null);
+
   const navigation = useNavigation();
 
   useEffect(() => {
-    const getToken = async () => {
+    const carregarToken = async () => {
       const savedToken = await AsyncStorage.getItem('@access_token');
       if (!savedToken) {
         Alert.alert('Erro', 'Usuário não autenticado.');
@@ -33,35 +34,42 @@ export default function CriarChamado() {
       }
       setToken(savedToken);
     };
-    getToken();
+
+    carregarToken();
   }, []);
 
   async function handleSubmit() {
-    if (!manutencao || !descricao) {
+    if (!nome || !email || !password) {
       Alert.alert('Erro', 'Preencha todos os campos.');
       return;
     }
 
     setLoading(true);
+
     try {
-      const response = await fetch('https://smepedrabranca.com.br/api/v1/chamados-usuario/', {
+      const response = await fetch('https://smepedrabranca.com.br/api/v1/usuarios/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ manutencao: manutencao, descricao }),
+        body: JSON.stringify({
+          nome,
+          email,
+          password,
+        }),
       });
 
       if (response.ok) {
-        Alert.alert('Sucesso', 'Chamado criado com sucesso.');
-        setManutencao('');
-        setDescricao('');
+        Alert.alert('Sucesso', 'Usuário cadastrado com sucesso.');
+        setNome('');
+        setEmail('');
+        setPassword('');
         navigation.goBack();
       } else {
-        Alert.alert('Erro', 'Não foi possível criar o chamado.');
-        setManutencao('');
-        setDescricao('');        
+        const errorData = await response.json();
+        console.log(errorData);
+        Alert.alert('Erro', 'Não foi possível cadastrar o usuário.');
       }
     } catch (error) {
       Alert.alert('Erro', 'Falha na comunicação com o servidor.');
@@ -85,37 +93,39 @@ export default function CriarChamado() {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Novo Chamado</Text>
+        <Text style={styles.headerTitle}>Cadastrar Usuário</Text>
       </View>
-
 
       {/* FORMULÁRIO */}
       <View style={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.label}>Tipo de Manutenção</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={manutencao}
-              onValueChange={(itemValue) => setManutencao(itemValue)}
-              style={styles.picker}
-              dropdownIconColor="#1565C0"
-            >
-              <Picker.Item label="Selecione..." value="" />
-              <Picker.Item label="Computador" value="1" />
-              <Picker.Item label="Impressora" value="2" />
-              <Picker.Item label="Computador e Impressora" value="3" />
-              <Picker.Item label="Outro" value="4" />
-            </Picker>
-          </View>
-
-          <Text style={styles.label}>Descrição</Text>
+          <Text style={styles.label}>Nome</Text>
           <TextInput
             style={styles.input}
-            value={descricao}
-            onChangeText={setDescricao}
-            placeholder="Descreva o problema"
-            multiline
-            textAlignVertical="top"
+            value={nome}
+            onChangeText={setNome}
+            placeholder="Digite o nome"
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Digite o email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.label}>Senha</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Digite a senha"
+            secureTextEntry
             placeholderTextColor="#999"
           />
 
@@ -127,7 +137,7 @@ export default function CriarChamado() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Novo Chamado</Text>
+              <Text style={styles.buttonText}>Cadastrar</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -146,7 +156,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 50 : 60,
     paddingBottom: 20,
-
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -179,28 +188,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     marginBottom: 8,
   },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  picker: {
-    height: 50,
-    fontSize: 16,
-    color: '#000',
-  },
   input: {
-    height: 120,
+    height: 50,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 10,
-    padding: 12,
+    paddingHorizontal: 12,
     fontSize: 15,
     color: '#333',
     backgroundColor: '#fff',
-    marginBottom: 24,
+    marginBottom: 16,
     fontFamily: 'Poppins-Regular',
   },
   button: {

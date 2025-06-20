@@ -32,7 +32,7 @@ export default function ListaChamadosAtendidos() {
         const token = await AsyncStorage.getItem('@access_token');
         if (!token) return;
 
-        const response = await axios.get('http://192.168.0.100:8000/api/usuario-logado/', {
+        const response = await axios.get('https://smepedrabranca.com.br/api/usuario-logado/', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -52,8 +52,8 @@ export default function ListaChamadosAtendidos() {
       if (!token) return;
 
       const endpoint = url || (isTecnico
-        ? 'http://192.168.0.100:8000/api/chamados-finalizados/'
-        : 'http://192.168.0.100:8000/api/chamados-usuario-finalizados/');
+        ? 'https://smepedrabranca.com.br/api/v1/chamados-finalizados/'
+        : 'https://smepedrabranca.com.br/api/v1/chamados-usuario-finalizados/');
 
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },

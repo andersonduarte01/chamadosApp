@@ -48,7 +48,7 @@ export default function ListaChamadas() {
         const token = await AsyncStorage.getItem('@access_token');
         if (!token) throw new Error('Token não encontrado');
 
-        const response = await axios.get('http://192.168.0.100:8000/api/usuario-logado/', {
+        const response = await axios.get('https://smepedrabranca.com.br/api/usuario-logado/', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -68,8 +68,8 @@ export default function ListaChamadas() {
       if (!token) throw new Error('Token não encontrado');
 
       const endpoint = url || (isTecnico
-        ? 'http://192.168.0.100:8000/api/chamadas-tecnico/'
-        : 'http://192.168.0.100:8000/api/chamadas-usuario/');
+        ? 'https://smepedrabranca.com.br/api/v1/chamados-tecnico-aguardando/'
+        : 'https://smepedrabranca.com.br/api/v1/chamados-usuario-aguardando/');
 
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
